@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import time, random, math, csv, os, datetime
 from common.constants import TeamId, Seasons
 from common.nba import get_todays_matchups
