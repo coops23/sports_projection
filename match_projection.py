@@ -92,29 +92,33 @@ def format_row(team: str, opponent: str, moneyline, fgm_home, fgm_away, total_ov
     row = [team + " vs " + opponent, moneyline, spread, '%.0f' % total_over_under]
     return row
 
-log_file = 'match_projection_%s.csv' % (str(datetime.date.today()))
-LOGGER.debug("Creating %s" % log_file)
+try:
+    log_file = 'match_projection_%s.csv' % (str(datetime.date.today()))
+    LOGGER.debug("Creating %s" % log_file)
 
-with open(log_file, 'w', newline='') as file:
-    LOGGER.debug("Setting up writer")
-    writer = csv.writer(file)
-    writer.writerow(['Matchup', 'Money Line', "Spread", "Total"])
+    with open(log_file, 'w', newline='') as file:
+        LOGGER.debug("Setting up writer")
+        writer = csv.writer(file)
+        writer.writerow(['Matchup', 'Money Line', "Spread", "Total"])
+        
+        LOGGER.debug("Getting today's matchups")
+        todays_matchups = get_todays_matchups()
+        seasons = [season for season in Seasons]
+
+        for matchup in todays_matchups:
+            team = matchup[0]
+            opponent = matchup[1]
+            LOGGER.debug("Getting matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
+            data = get_matchup_data(seasons, team, opponent)
+            (moneyline, fgm_home, fgm_away, total_over_under, spread) = calculate_match_projection(seasons, data)
+            LOGGER.debug("Formatting matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
+            row = format_row(str(TeamId(team)), str(TeamId(opponent)), moneyline, fgm_home, fgm_away, total_over_under, spread)
+            LOGGER.debug("Saving matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
+            writer.writerow(row)
+    LOGGER.debug("Uploading %s to google drive" % log_file)
+    upload_file(NBA_TEAM_FOLDER_ID, log_file)
+    LOGGER.debug("File uploaded to google drive!")
+    os.remove(log_file)
     
-    LOGGER.debug("Getting today's matchups")
-    todays_matchups = get_todays_matchups()
-    seasons = [season for season in Seasons]
-
-    for matchup in todays_matchups:
-        team = matchup[0]
-        opponent = matchup[1]
-        LOGGER.debug("Getting matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
-        data = get_matchup_data(seasons, team, opponent)
-        (moneyline, fgm_home, fgm_away, total_over_under, spread) = calculate_match_projection(seasons, data)
-        LOGGER.debug("Formatting matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
-        row = format_row(str(TeamId(team)), str(TeamId(opponent)), moneyline, fgm_home, fgm_away, total_over_under, spread)
-        LOGGER.debug("Saving matchup data for %s vs %s" % (TeamId(team), TeamId(opponent)))
-        writer.writerow(row)
-LOGGER.debug("Uploading %s to google drive" % log_file)
-upload_file(NBA_TEAM_FOLDER_ID, log_file)
-LOGGER.debug("File uploaded to google drive!")
-os.remove(log_file)
+except Exception as e:
+    LOGGER.error(e)
