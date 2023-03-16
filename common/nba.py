@@ -1,4 +1,7 @@
 from nba_api.live.nba.endpoints import scoreboard
+from nba_api.stats.endpoints import leaguedashplayerstats
+from nba_api.stats.library.parameters import PerModeDetailed
+from .constants import Seasons
 from typing import List
 from datetime import datetime
 
@@ -19,13 +22,33 @@ def get_todays_matchups() -> List[List]:
     except Exception as e:
         raise e
 
-if __name__ == "__main__":
-    from constants import TeamId
+def get_teams_players(team_id: str, season: str) -> List[str]:
+    player_stats = leaguedashplayerstats.LeagueDashPlayerStats(team_id_nullable=team_id, season=season)
+    player_data = player_stats.get_dict()['resultSets'][0]['rowSet']
+    _player_header = player_stats.get_dict()['resultSets'][0]['headers']
+
+    players = []
+    for player in player_data:
+        players.append((player[0], player[1]))
     
-    try:
-        games = get_todays_matchups()
-        for match in games: 
-            print(TeamId(match[0]), "vs", TeamId(match[1]))
-    except Exception as e:
-        print("ERROR:". e)
+    return players
+
+def get_players_matchup_data(team_id: str, opponent_id: str, seasons: Seasons, per_mode: PerModeDetailed = PerModeDetailed.per_game):
+    data = {}
+    season_data_template = {}
+    for season in seasons:
+        season_data_template[season.value] = None
+    for season in seasons:
+        player_stats = leaguedashplayerstats.LeagueDashPlayerStats(team_id_nullable=team_id, opponent_team_id=opponent_id, season=season.value, per_mode_detailed=per_mode)
+        player_data = player_stats.get_dict()['resultSets'][0]['rowSet']
+        header = ["SEASON"] + player_stats.get_dict()['resultSets'][0]['headers']
+        
+        for i in range(0, len(player_data)):
+            player_id = player_data[i][0]
+            if data.get(player_id) is None:
+                season_data = season_data_template.copy()
+                data[player_id] = season_data
+            data[player_id][season.value] = player_data[i]
+            
+    return (header, data)
     

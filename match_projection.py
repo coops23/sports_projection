@@ -93,7 +93,7 @@ def format_row(team: str, opponent: str, moneyline, fgm_home, fgm_away, total_ov
     return row
 
 try:
-    LOGGER.debug("Getting today's matchups")
+    LOGGER.info("------------------MATCH PROJECTION START------------------")
     todays_matchups = get_todays_matchups()
         
     if len(todays_matchups) > 0:
@@ -123,6 +123,6 @@ try:
         os.remove(log_file)
     else:
         LOGGER.info("No games today")
-    
+    LOGGER.info("------------------MATCH PROJECTION FINISH------------------")
 except Exception as e:
     LOGGER.error(e)
